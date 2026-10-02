@@ -447,6 +447,15 @@ class UploadThread: public IThread
 				metapath[0] = '\0';
 			}
 
+			// === LOCAL MODE ===
+			const char *minidumpMode = g_pSM->GetCoreConfigValue("MinidumpMode");
+			if (minidumpMode && (tolower(minidumpMode[0]) == 'l')) {
+				if (log) fprintf(log, "Local mode: keeping dump %s\n", path);
+				dumps->NextEntry();
+				continue;
+			}
+			// === /LOCAL MODE ===
+
 			presubmitToken[0] = '\0';
 			PresubmitResponse presubmitResponse = kPRUploadCrashDumpAndMetadata;
 
@@ -485,11 +494,13 @@ class UploadThread: public IThread
 					break;
 			}
 
-			if (metapath[0]) {
-				unlink(metapath);
-			}
+			const char *deleteOption = g_pSM->GetCoreConfigValue("MinidumpDeleteAfterProcessing");
+			bool deleteAfter = !deleteOption || (tolower(deleteOption[0]) == 'y' || deleteOption[0] == '1');
 
-			unlink(path);
+			if (deleteAfter) {
+				if (metapath[0]) unlink(metapath);
+				unlink(path);
+			}
 
 			if (log) fflush(log);
 
